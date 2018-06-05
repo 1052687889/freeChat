@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>calendarDlg</class>
+ <widget class="QDialog" name="calendarDlg">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>237</width>
+    <height>217</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>日历</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>pic/calendar.ico</normaloff>pic/calendar.ico</iconset>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_2">
+   <item>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QCalendarWidget" name="calendarWidget">
+       <property name="cursor">
+        <cursorShape>PointingHandCursor</cursorShape>
+       </property>
+       <property name="layoutDirection">
+        <enum>Qt::LeftToRight</enum>
+       </property>
+       <property name="minimumDate">
+        <date>
+         <year>1900</year>
+         <month>1</month>
+         <day>1</day>
+        </date>
+       </property>
+       <property name="maximumDate">
+        <date>
+         <year>2099</year>
+         <month>12</month>
+         <day>31</day>
+        </date>
+       </property>
+       <property name="horizontalHeaderFormat">
+        <enum>QCalendarWidget::ShortDayNames</enum>
+       </property>
+       <property name="verticalHeaderFormat">
+        <enum>QCalendarWidget::NoVerticalHeader</enum>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
