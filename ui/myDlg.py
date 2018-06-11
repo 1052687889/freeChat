@@ -2,11 +2,11 @@
 # _*_ coding: UTF-8 _*_
 # Author:taoke
 from PyQt5 import QtCore, QtGui, QtWidgets
-
-import sys,pathlib,json,os
-import chat,basis,login,register,friendList,adduser,calendar
+from PyQt5.QtGui import QFont,QColor
+import sys,pathlib,json,os,time,pickle
+import chat,basis,login,register,friendList,adduser,_calendar
 from queue import Queue
-import pygame
+import pygame,bs4
 from const import MsgType
 class chatDlg(QtWidgets.QWidget,chat.Ui_chatDlg,basis.basis):
     def __init__(self,parent = None):
@@ -298,7 +298,7 @@ class friendListDlg(QtWidgets.QWidget,friendList.Ui_friendListDlg,basis.basis):
         self.setingButton.setIcon(icon8)
         self.setingButton.clicked.connect(self.setingButton_clicked)
         # self.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint) # 设置窗口总在最前
-
+        self.friendTreeWidget.itemDoubleClicked.connect(self.friendTreeWidgetItemDoubleClicked)
     def weatherButton_clicked(self):
         print('weatherButton_clicked')
 
@@ -485,6 +485,12 @@ class friendListDlg(QtWidgets.QWidget,friendList.Ui_friendListDlg,basis.basis):
                 if msg.msgtype == MsgType.CLOSE_DLG:
                     self.dlgstate.remove(MsgType.TETRIS_DLG)
 
+    def friendTreeWidgetItemDoubleClicked(self):
+        hititem = self.friendTreeWidget.currentItem()
+        if hititem.parent():
+            print('friendTreeWidgetItemDoubleClicked:',self.friendTreeWidget.currentItem().text(0))
+
+
 class adduserDlg(QtWidgets.QDialog,adduser.Ui_adduserDialog,basis.basis):
     '''添加好友对话框'''
     def __init__(self,parent = None):
@@ -505,7 +511,7 @@ class adduserDlg(QtWidgets.QDialog,adduser.Ui_adduserDialog,basis.basis):
             self.done(1)
 
 
-class calendarDlg(QtWidgets.QWidget,calendar.Ui_calendarDlg,basis.basis):
+class calendarDlg(QtWidgets.QWidget, _calendar.Ui_calendarDlg, basis.basis):
     '''日历对话框'''
     def __init__(self,send_queue,parent=None):
         self.send_queue = send_queue
@@ -519,11 +525,141 @@ class calendarDlg(QtWidgets.QWidget,calendar.Ui_calendarDlg,basis.basis):
         msg = MsgType(type=MsgType.MSG_CALENDAR,msgtype=MsgType.CLOSE_DLG,msg = os.getpid())
         self.send_queue.put(msg)
 
+class chatFrame(object):
+    def __init__(self,name,time_ = time.localtime(),html = ''):
+        self.name = name
+        self.time = time_
+        self.html = html
+        self.path = self.get_zh_pic(self.name)
 
+    def __repr__(self):
+        html = '<div>' \
+                    '<img src="%s" align="left" alt="" width="30" height="30">' \
+                    '<b align="left">%s</b>' \
+                '</div>' \
+                    '<p>%s</p>' \
+                    '<h6 align="center" style="color:blue">%s<\h6>' \
+               '<br>'\
+               %(self.path,self.name,self.html,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+        return html
 
+    def get_zh_pic(self,name):
+        path = str(pathlib.Path(__file__).parent/('obj/%s.jpg'%self.name))
+        font = pygame.font.SysFont('kaiti', 128)
+        # 渲染图片，设置背景颜色和字体样式,前面的颜色是字体颜色
+        ftext = font.render(name[0], True, (65, 83, 130), (255, 255, 255))
+        pygame.image.save(ftext, path)  # 图片保存地址
+        return path
 
+class chatDlg(QtWidgets.QWidget, chat.Ui_chatDlg, basis.basis):
+    CHAT_SETING_FILE = './chat_seting.pkl'
+    def __init__(self,send_queue,username,targetname,parent = None):
 
+        self.send_queue = send_queue
+        self.username = username
+        self.targetname = targetname
+        self.tHtml = ''
+        super(chatDlg, self).__init__(parent)
+        self.setupUi(self)
+        self.get_seting_from_file()
+        self.init_Ui()
+        self.show()
 
+    def init_Ui(self):
+        path = pathlib.Path(__file__)
+        self.setWindowIcon(QtGui.QIcon(str(path.parent / "pic" / "logo.jpg")))
+        self.setWindowTitle('微聊   %s'%self.username)
+        self.SendButton.clicked.connect(self.sendButton_clicked)
+        self.fontButton.clicked.connect(self.fontButtom_clicked)
+        self.colorButton.clicked.connect(self.colorButtom_clicked)
+        self.setBackPic(self, str(path.parent / "pic" / "chatback.bmp"))
+        icon0 = QtGui.QIcon()
+        icon0.addPixmap(QtGui.QPixmap(str(pathlib.Path(__file__).parent/"pic/font.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.fontButton.setIcon(icon0)
+        icon1 = QtGui.QIcon()
+        icon1.addPixmap(QtGui.QPixmap(str(pathlib.Path(__file__).parent/"pic/colours.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.colorButton.setIcon(icon1)
+        icon2 = QtGui.QIcon()
+        icon2.addPixmap(QtGui.QPixmap(str(pathlib.Path(__file__).parent/"pic/send.ico")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.SendButton.setIcon(icon2)
+
+    def sendButton_clicked(self):
+        endstr = '</html>'
+        editText = self.sendTextEdit.toPlainText()
+        if editText == '':
+            return
+        html = str(self.textBrowser.toHtml())
+        html = html[:-7]
+        bs_sendEdit = bs4.BeautifulSoup(self.sendTextEdit.toHtml(),'html5lib')
+        frame = chatFrame(self.username, html=str(bs_sendEdit.html.body))
+        # bs_textBrowser = bs4.BeautifulSoup(self.textBrowser.toHtml(),'html5lib')
+        html += str(frame)#str(bs_sendEdit.html.body)
+        html += endstr
+        print(html)
+        self.textBrowser.setHtml(html)
+        self.textBrowser.verticalScrollBar().setSliderPosition(self.textBrowser.verticalScrollBar().maximum())
+
+    def setAllTextColor(self,color):
+        sendstr = self.sendTextEdit.toPlainText()
+        self.sendTextEdit.setTextColor(color)
+        self.sendTextEdit.setText(self.sendTextEdit.toPlainText())
+        cursor = self.sendTextEdit.textCursor()
+        cursor.setPosition(len(sendstr))
+        self.sendTextEdit.setTextCursor(cursor)
+
+    def fontButtom_clicked(self):
+        font, ok = QtWidgets.QFontDialog.getFont(QFont( self.seting['font_family'],
+                                                        self.seting['font_pointSize'],
+                                                        self.seting['font_weight'],
+                                                        self.seting['font_italic']))
+        if ok:
+            self.sendTextEdit.setFont(font)
+            self.seting['font_family'] = font.family()
+            self.seting['font_weight'] = font.weight()
+            self.seting['font_pointSize'] = font.pointSize()
+            self.seting['font_italic'] = font.italic()
+            self.save_seting_to_file()
+
+    def colorButtom_clicked(self):
+        col = QtWidgets.QColorDialog.getColor(self.seting['sendEdit_fontcolor'])
+        if col.isValid():
+            self.setAllTextColor(col)
+            self.seting['sendEdit_fontcolor'] = col
+            self.save_seting_to_file()
+
+    def seting_sendedit_font_color(self):
+        self.sendTextEdit.setFont(QFont(self.seting['font_family'],
+                                        self.seting['font_pointSize'],
+                                        self.seting['font_weight'],
+                                        self.seting['font_italic']))
+        self.setAllTextColor(QColor(self.seting['sendEdit_fontcolor']))
+
+    def get_seting_from_file(self):
+        try:
+            file = open(self.CHAT_SETING_FILE,'rb')
+            self.seting = pickle.load(file)
+            self.seting_sendedit_font_color()
+        except Exception as e:
+
+            self.seting = {'font_family':'Arial',
+                           'font_pointSize':9,
+                           'font_weight':-1,
+                           'font_italic':False,
+                           'sendEdit_fontcolor':(0,0,0)}
+            self.seting_sendedit_font_color()
+            self.save_seting_to_file()
+
+    def save_seting_to_file(self):
+        with open(self.CHAT_SETING_FILE,'wb') as file:
+            pickle.dump(self.seting,file)
+
+if __name__ == "__main__":
+    import sys
+    pygame.init()
+    q = Queue(10)
+    app = QtWidgets.QApplication(sys.argv)
+    a = chatDlg(q,'taoke','111')
+    sys.exit(app.exec_())
 
 
 

@@ -18,7 +18,7 @@ class weatherApp(QMainWindow):
 
     def display(self):
         self.browser = QWebEngineView()
-        with open('weather.html','r',encoding='utf-8') as file:
+        with open('t.html','r',encoding='utf-8') as file:
             s = file.read()
             print(s)
 
@@ -27,6 +27,7 @@ class weatherApp(QMainWindow):
 
 
 if __name__=='__main__':
+    print(__file__)
     app = QApplication(sys.argv)
     window = weatherApp()
     window.display()

@@ -143,7 +143,7 @@ class application(object):
 
     def join_all(self):
         for i in self.processingList:
-            i.join()
+            i[0].join()
 
     def clear_processing(self,target_pid):
         for i in self.processingList:

@@ -1,18 +1,14 @@
 #!/usr/bin/env python
 # _*_ coding: UTF-8 _*_
 # Author:taoke
+import http.cookiejar
 import re
+
 import urllib.request
 import cityDic
 import threading
 import json
-import http.cookiejar
-import weatherApp
-from PyQt5.QtWidgets import *
-import sys
-import pathlib
-import time
-import PyQt5
+
 class ipAddrAreaCrawler(object):
     url = 'http://2018.ip138.com/ic.asp'
     ipAddrArea = ()
@@ -40,7 +36,7 @@ class ipAddrAreaCrawler(object):
         return ipAddrAreaCrawler.ipAddrArea
 
 class weatherCrawler(object):
-    #          http://www.nmc.cn/publish/forecast/AGD/shenzhen.html
+    # http://www.nmc.cn/publish/forecast/AGD/shenzhen.html
     mainUrl = 'http://www.nmc.cn'
     apiUrl =  'http://www.nmc.cn/f/rest/aqi/'
     realUrl = 'http://www.nmc.cn/f/rest/real/'
@@ -106,8 +102,8 @@ if __name__ == '__main__':
     # sys.exit(app.exec_())
 
     w = weatherCrawler('广东','深圳')
-    w.getWeatherData()
-
+    # w.getWeatherData()
+    # print('-->')
 
 
 
