@@ -554,7 +554,6 @@ class chatFrame(object):
 class chatDlg(QtWidgets.QWidget, chat.Ui_chatDlg, basis.basis):
     CHAT_SETING_FILE = './chat_seting.pkl'
     def __init__(self,send_queue,username,targetname,parent = None):
-
         self.send_queue = send_queue
         self.username = username
         self.targetname = targetname
@@ -564,6 +563,7 @@ class chatDlg(QtWidgets.QWidget, chat.Ui_chatDlg, basis.basis):
         self.get_seting_from_file()
         self.init_Ui()
         self.show()
+        print(self.sendTextEdit.toHtml())
 
     def init_Ui(self):
         path = pathlib.Path(__file__)
@@ -572,7 +572,9 @@ class chatDlg(QtWidgets.QWidget, chat.Ui_chatDlg, basis.basis):
         self.SendButton.clicked.connect(self.sendButton_clicked)
         self.fontButton.clicked.connect(self.fontButtom_clicked)
         self.colorButton.clicked.connect(self.colorButtom_clicked)
+        self.sendTextEdit.currentCharFormatChanged.connect(self.sendEdit_currentCharFormatChanged)
         self.setBackPic(self, str(path.parent / "pic" / "chatback.bmp"))
+
         icon0 = QtGui.QIcon()
         icon0.addPixmap(QtGui.QPixmap(str(pathlib.Path(__file__).parent/"pic/font.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.fontButton.setIcon(icon0)
@@ -583,6 +585,10 @@ class chatDlg(QtWidgets.QWidget, chat.Ui_chatDlg, basis.basis):
         icon2.addPixmap(QtGui.QPixmap(str(pathlib.Path(__file__).parent/"pic/send.ico")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.SendButton.setIcon(icon2)
 
+    def sendEdit_currentCharFormatChanged(self):
+        if self.sendTextEdit.toPlainText() == '':
+            self.sendTextEdit.setTextColor(QColor(*self.allseting[self.username]['sendEdit_fontcolor']))
+
     def sendButton_clicked(self):
         endstr = '</html>'
         editText = self.sendTextEdit.toPlainText()
@@ -592,8 +598,7 @@ class chatDlg(QtWidgets.QWidget, chat.Ui_chatDlg, basis.basis):
         html = html[:-7]
         bs_sendEdit = bs4.BeautifulSoup(self.sendTextEdit.toHtml(),'html5lib')
         frame = chatFrame(self.username, html=str(bs_sendEdit.html.body))
-        # bs_textBrowser = bs4.BeautifulSoup(self.textBrowser.toHtml(),'html5lib')
-        html += str(frame)#str(bs_sendEdit.html.body)
+        html += str(frame)
         html += endstr
         print(html)
         self.textBrowser.setHtml(html)
@@ -608,57 +613,62 @@ class chatDlg(QtWidgets.QWidget, chat.Ui_chatDlg, basis.basis):
         self.sendTextEdit.setTextCursor(cursor)
 
     def fontButtom_clicked(self):
-        font, ok = QtWidgets.QFontDialog.getFont(QFont( self.seting['font_family'],
-                                                        self.seting['font_pointSize'],
-                                                        self.seting['font_weight'],
-                                                        self.seting['font_italic']))
+        font, ok = QtWidgets.QFontDialog.getFont(self.getCurrentFont())
         if ok:
-            self.sendTextEdit.setFont(font)
-            self.seting['font_family'] = font.family()
-            self.seting['font_weight'] = font.weight()
-            self.seting['font_pointSize'] = font.pointSize()
-            self.seting['font_italic'] = font.italic()
+            self.allseting[self.username]['font_family'] = font.family()
+            self.allseting[self.username]['font_weight'] = font.weight()
+            self.allseting[self.username]['font_pointSize'] = font.pointSize()
+            self.allseting[self.username]['font_italic'] = font.italic()
             self.save_seting_to_file()
+            self.seting_sendedit_font_color()
 
     def colorButtom_clicked(self):
-        col = QtWidgets.QColorDialog.getColor(self.seting['sendEdit_fontcolor'])
+        col = QtWidgets.QColorDialog.getColor(QColor(*self.allseting[self.username]['sendEdit_fontcolor']))
         if col.isValid():
-            self.setAllTextColor(col)
-            self.seting['sendEdit_fontcolor'] = col
+            self.allseting[self.username]['sendEdit_fontcolor'] = (col.red(), col.green(), col.blue())
             self.save_seting_to_file()
+            self.seting_sendedit_font_color()
+
+    def getCurrentFont(self):
+        return QFont(self.allseting[self.username]['font_family'],
+                     self.allseting[self.username]['font_pointSize'],
+                     self.allseting[self.username]['font_weight'],
+                     self.allseting[self.username]['font_italic'])
 
     def seting_sendedit_font_color(self):
-        self.sendTextEdit.setFont(QFont(self.seting['font_family'],
-                                        self.seting['font_pointSize'],
-                                        self.seting['font_weight'],
-                                        self.seting['font_italic']))
-        self.setAllTextColor(QColor(self.seting['sendEdit_fontcolor']))
+        self.sendTextEdit.setFont(self.getCurrentFont())
+        self.setAllTextColor(QColor(*self.allseting[self.username]['sendEdit_fontcolor']))
 
     def get_seting_from_file(self):
+        defaultseting = {'font_family':'Arial',
+                         'font_pointSize':12,
+                         'font_weight':-1,
+                         'font_italic':False,
+                         'sendEdit_fontcolor':(0,0,0)}
         try:
             file = open(self.CHAT_SETING_FILE,'rb')
-            self.seting = pickle.load(file)
-            self.seting_sendedit_font_color()
+            self.allseting = pickle.load(file)
+            try:
+                self.seting_sendedit_font_color()
+            except:
+                self.allseting[self.username] = defaultseting
+                self.seting_sendedit_font_color()
+                self.save_seting_to_file()
         except Exception as e:
-
-            self.seting = {'font_family':'Arial',
-                           'font_pointSize':9,
-                           'font_weight':-1,
-                           'font_italic':False,
-                           'sendEdit_fontcolor':(0,0,0)}
+            self.allseting   = {self.username:defaultseting}
             self.seting_sendedit_font_color()
             self.save_seting_to_file()
 
     def save_seting_to_file(self):
         with open(self.CHAT_SETING_FILE,'wb') as file:
-            pickle.dump(self.seting,file)
+            pickle.dump(self.allseting,file)
 
 if __name__ == "__main__":
     import sys
     pygame.init()
     q = Queue(10)
     app = QtWidgets.QApplication(sys.argv)
-    a = chatDlg(q,'taoke','111')
+    a = chatDlg(q,'taoke1','111')
     sys.exit(app.exec_())
 
 
