@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # _*_ coding: UTF-8 _*_
 # Author:taoke
-import sys
+import sys,hashlib
 from PyQt5 import QtCore, QtGui, QtWidgets
-
+from const import *
 class basis(object):
     @staticmethod
     def setBackPic(dlg,str):
@@ -20,6 +20,18 @@ class basis(object):
         # 显示到屏幕中心
         qr.moveCenter(cp)
         dlg.move(qr.topLeft())
+
+    @staticmethod
+    def sendMsg(queue = None,type_=None,msgtype_=None,msg_=None):
+        msg = MsgType(type=type_, msgtype=msgtype_,msg=msg_)
+        queue.put(msg)
+
+    @staticmethod
+    def stringtomd5(originstr):
+        """将string转化为MD5"""
+        signaturemd5 = hashlib.md5()
+        signaturemd5.update(originstr)
+        return signaturemd5.hexdigest()
 
 class Communicate(QtCore.QObject):
     closeApp = QtCore.pyqtSignal()
@@ -52,9 +64,11 @@ class registerLoginDlg(object):
         basis.center(self.rgisterDlg)
 
 if __name__ == "__main__":
-    app = QtWidgets.QApplication(sys.argv)
-    MainWindow = registerLoginDlg()
-    sys.exit(app.exec_())
+    md5 = basis.stringtomd5('黄晔'.encode())
+    print('md5:',md5)
+    # app = QtWidgets.QApplication(sys.argv)
+    # MainWindow = registerLoginDlg()
+    # sys.exit(app.exec_())
 
 
 

@@ -6,20 +6,29 @@ import threading
 from time import *
 from crc16 import *
 from json import *
+from traceback import *
+#该装饰器会按错误的格式打印错误，但是程序不会崩溃
+def except_catcher(func):
+    def wrapper(*args,**kwargs):
+        try:
+            return func(*args,**kwargs)
+        except Exception as e:
+            print_exc()
+    return wrapper
+
+
+
+def formattime(time):
+    return strftime('%Y-%m-%d %X',gmtime(time))
 
 class Data(object):
-    def __init__(self):
-        pass
-
     @classmethod
     def parse(cls,dtype,data):
         if dtype == 'json':
             data = loads(data)
         else:
             pass
-
         return data        
-
 
 class DataProcessing(object):
     def __init__(self):
@@ -41,8 +50,8 @@ class DataProcessing(object):
         if dtype != 'bytes':
             data = data.encode()
 
-        sour = source.to_str().encode()
-        targ = target.to_str().encode()
+        sour = source().encode()
+        targ = target().encode()
         dtyp = dtype.encode()
         length = (len(sour),len(targ),len(dtyp),len(data))
         buf = struct.pack('!BBBH',*length)
@@ -54,9 +63,9 @@ class DataProcessing(object):
         length = struct.unpack_from('!BBBH',bytedata)
         data = struct.unpack_from('!d%ds%ds%ds%ds'%length,bytedata,5)
         
-        time   = strftime('%Y-%m-%d %X',gmtime(data[0]))
-        source = UserID.from_str(data[1].decode())
-        target = UserID.from_str(data[2].decode())
+        time   = data[0]
+        source = UserID(data[1].decode())
+        target = UserID(data[2].decode())
         dtype  = data[3].decode()
         if dtype != 'bytes':
             data = data[4].decode()
@@ -76,9 +85,9 @@ class DataProcessing(object):
 #   帧头   负载长度   负载   CRC16校验
 #  1Byte    6Byte    nByte   4Byte
     @classmethod
-    def pack(cls,source,target,dtype,data):
+    def pack(cls,source,target,dtype,data,time = time()):
 
-        sendata = (source,target,time(),dtype,data)
+        sendata = (source,target,time,dtype,data)
         encr_bytes = cls.encryption(cls.encode(*sendata))
 
         x = bytes.fromhex('AA') + cls.addlen(encr_bytes,6) + CRC16(encr_bytes)
@@ -138,18 +147,23 @@ class RcvDataProcessing(object):
                 break
 
             if content != []:
-                #print('content:',content)
-                # recvdata = DataProcessing.recvfrom(**content)
-                # print('recvdata:',recvdata)
-                return commandfunc(*content)
+                commandfunc(*content)
             else:
                 #print('receive data is empty',content)
                 pass
 #目标和源ID解析
 class UserID(object):
     def __init__(self,dtype,name = None):
-        self.dtype = dtype
-        self.name = name
+        if isinstance(dtype,UserID):
+            self.dtype= dtype.dtype
+            self.name = dtype.name
+
+        elif ',' in dtype:
+             self.dtype,self.name = dtype.split(',')
+        else:
+            self.dtype = dtype
+            self.name = name
+
 
     def __repr__(self):
         if self.name is None:
@@ -158,26 +172,12 @@ class UserID(object):
             return "UserID('%s','%s')"%(self.dtype,self.name)
 
     def __str__(self):
-        return str(self.get())
-
-    def gettype(self):
-        return self.dtype
-
-    def getname(self):
-        return self.name
-
-    def get(self):
         if self.name is None:
-            return self.dtype
-        else:#
-            return self.dtype,self.name
+            return str(self.dtype)
+        else:
+            return str('%s,%s'%(self.dtype,self.name))
 
-    @classmethod
-    def from_str(self,data):
-        '''从字符串中生成一个对象'''
-        return UserID(*data.split(','))
-
-    def to_str(self):
+    def __call__(self):
         '''把该对象转为字符串'''
         if self.name is None:
             return self.dtype
