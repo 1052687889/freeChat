@@ -6,19 +6,20 @@
 原理：通过request请求模拟浏览器获取中央气象网的数据，通过textBo
 '''
 
-import sys,pathlib,threading,queue
+import sys,pathlib,threading,queue,os
 import weather
 import bs4
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 import cityDic,weatherCrawler
-
+from const import *
 class weatherDlg(weather.Ui_weatherDlg,QWidget):
-    def __init__(self,parent=None):
+    def __init__(self,send_queue,parent=None):
         self.threadList = []
         super(weatherDlg, self).__init__(parent)
         self.msg_queue = queue.Queue()
+        self.send_queue = send_queue
         self.setupUi(self)
         self.init_Ui()
         self.show()
@@ -44,14 +45,18 @@ class weatherDlg(weather.Ui_weatherDlg,QWidget):
         self.curentCityButton.clicked.connect(self.currentCityButton_clicked)
         self.textBrowser.setHtml('<h1 style="color: #1c94c4">使用说明<\h1>\
                                     <p style="color: #1c94c4;font-weight: 900" align="left">1、选择想要查询的城市，点击查询按钮查询天气<\p>\
-                                    <p style="color: #1c94c4;font-weight: 900" align="left">2、点击当前城市，自动选择当前所在城市<\p>')
+                                    <p style="color: #1c94c4;font-weight: 900" align="left">2、点击当前城市按钮，自动选择当前所在城市<\p>')
         self.resize(880, 550)
         self.setFixedSize(880, 550)
 
     def provinceComboBox_activated(self):
+        print('provinceComboBox_activated',self.provinceComboBox.currentText())
         for province in cityDic.AllProvinceCity:
             if province['name'] == (self.provinceComboBox.currentText()):
+                print(province['name'] ,self.provinceComboBox.currentText(),province['citys'])
                 self.cityComboBox.clear()
+                print('---------->')
+                print([city['city'] for city in province['citys']])
                 self.cityComboBox.addItems((city['city'] for city in province['citys']))
 
     def handleMsg(self):
@@ -64,7 +69,7 @@ class weatherDlg(weather.Ui_weatherDlg,QWidget):
             if self.iplabel.text() == '':
                 ip = self.ipAddrCrawler.getipAddArea()
                 if ip:
-                    self.iplabel.setText('  '+ip[1]+'省 '+ip[2]+'市 '+ip[3]+' ip地址:'+ip[0])
+                    self.iplabel.setText('当前城市:  '+ip[1]+ip[2]+'  '+ip[3]+' ip地址:'+ip[0])
                     for province in cityDic.AllProvinceCity:
                         if province['name'].find(ip[1])>=0:
                             self.provinceComboBox.setCurrentText(province['name'])
@@ -84,27 +89,37 @@ class weatherDlg(weather.Ui_weatherDlg,QWidget):
     def check_crawler_data(self):
         while True:
             if self.crawler.getData():
+                print(self.crawler.getData())
+                # print('check_crawler_data -- self.threadList:', self.threadList)
                 self.threadList.remove('check_crawler_data_threading')
+                # print('check_crawler_data -- self.threadList:', self.threadList)
                 self.msg_queue.put('crawler_data_ready')
                 break
 
     def handle_html(self,html):
         data = self.crawler.getData()
         bs_html = bs4.BeautifulSoup(html, 'html5lib')
-        bs_html.html.body.contents[1].string = str(bs_html.html.body.contents[1].string)+ self.crawler.getData()[2]['publish_time']
+        try:
+            bs_html.html.body.contents[1].string = str(bs_html.html.body.contents[1].string)+ \
+                                                   data[2]['publish_time']+\
+                                                   data[2]['station']['province']+\
+                                                   data[2]['station']['city']+' - '+data[2]['station']['code']
 
-        bs_html.html.body.contents[3].tbody.contents[0].contents[3].string = str(data[2]['weather']['temperature'])+'℃'
-        bs_html.html.body.contents[3].tbody.contents[0].contents[7].string = str(data[2]['weather']['rain'])+'mm' #power
-        bs_html.html.body.contents[3].tbody.contents[0].contents[11].string = str(data[2]['wind']['direct']) +str(data[2]['wind']['power'])
+            bs_html.html.body.contents[3].tbody.contents[0].contents[3].string = str('-' if data[2]['weather']['temperature'] == 9999 else data[2]['weather']['temperature'])+'℃'
+            bs_html.html.body.contents[3].tbody.contents[0].contents[7].string = str('-' if data[2]['weather']['rain'] == 9999 else data[2]['weather']['rain'])+'mm' #power
+            bs_html.html.body.contents[3].tbody.contents[0].contents[11].string = '-' if '9999' == str(data[2]['wind']['direct'])else  str(data[2]['wind']['direct'])+str(data[2]['wind']['power'])
 
-        bs_html.html.body.contents[3].tbody.contents[2].contents[3].string = str(data[1]['text'])
-        bs_html.html.body.contents[3].tbody.contents[2].contents[7].string = str(data[2]['weather']['humidity'])+'%'
-        bs_html.html.body.contents[3].tbody.contents[2].contents[11].string = str(data[2]['weather']['feelst']) + '℃'
-
+            bs_html.html.body.contents[3].tbody.contents[2].contents[3].string = str('-' if data[1]['text'] == '9999' else data[1]['text'])
+            bs_html.html.body.contents[3].tbody.contents[2].contents[7].string = str('-' if data[2]['weather']['humidity'] == 9999 else data[2]['weather']['humidity'])+'%'
+            bs_html.html.body.contents[3].tbody.contents[2].contents[11].string = str('-'if data[2]['weather']['feelst'] == 9999 else data[2]['weather']['feelst']) + '℃'
+        except:
+            print('data error')
+        # print(bs_html.prettify())
+        # print(__file__)
         for i in range(7):
             bs_html.html.body.contents[7].tbody.contents[0].contents[1+i*2].contents[1].string = data[0][i]['date']
             bs_html.html.body.contents[7].tbody.contents[0].contents[1+i*2].contents[3].string = data[0][i]['week']
-            bs_html.html.body.contents[7].tbody.contents[0].contents[1+i*2].contents[5]['src'] = data[0][i]['wicon']
+            bs_html.html.body.contents[7].tbody.contents[0].contents[1+i*2].contents[5]['src'] = 'Crawler/'+data[0][i]['wicon']
             bs_html.html.body.contents[7].tbody.contents[0].contents[1+i*2].contents[7].string = data[0][i]['wdesc']
             bs_html.html.body.contents[7].tbody.contents[0].contents[1+i*2].contents[9].string = data[0][i]['temp']
             bs_html.html.body.contents[7].tbody.contents[0].contents[1+i*2].contents[11].string = data[0][i]['direct']
@@ -113,7 +128,8 @@ class weatherDlg(weather.Ui_weatherDlg,QWidget):
         return bs_html.prettify()
 
     def updata_to_html(self):
-        with open('weather.html','rb') as file:
+        path = str(pathlib.Path(__file__).parent / 'weather.html')
+        with open(path,'rb') as file:
             html = file.read().decode()
             self.textBrowser.setHtml(self.handle_html(html))
 
@@ -122,12 +138,17 @@ class weatherDlg(weather.Ui_weatherDlg,QWidget):
         city = self.cityComboBox.currentText()
         self.crawler = weatherCrawler.weatherCrawler(province,city)
         if 'check_crawler_data_threading' not in self.threadList:
+            self.textBrowser.setHtml('<h1 style="color: #1c94c4">查询中。。。<\h1>')
             threading.Thread(target=self.check_crawler_data).start()
             self.threadList.append('check_crawler_data_threading')
 
 
     def currentCityButton_clicked(self):
         self.iplabel.setText('')
+
+    def closeEvent(self, QCloseEvent):
+        msg = MsgType(type=MsgType.MSG_WEATHER,msgtype=MsgType.CLOSE_DLG,msg = os.getpid())
+        self.send_queue.put(msg)
 
     @staticmethod
     def setBackPic(dlg,str):
@@ -147,12 +168,13 @@ class weatherDlg(weather.Ui_weatherDlg,QWidget):
 
 def main(queue):
     app = QApplication(sys.argv)
-    window = weatherDlg()
+    window = weatherDlg(queue)
     sys.exit(app.exec_())
 
 if __name__=='__main__':
+    q = queue.Queue()
     app = QApplication(sys.argv)
-    window = weatherDlg()
+    window = weatherDlg(q)
     sys.exit(app.exec_())
 
 

@@ -7,8 +7,8 @@ import bs4
 import urllib.request
 import cityDic
 import threading
-import json
-
+import json,pathlib
+import gzip
 class ipAddrAreaCrawler(object):
     url = 'http://2018.ip138.com/ic.asp'
     ipAddrArea = None
@@ -51,6 +51,7 @@ class weatherCrawler(object):
         self.city = city
         self.dataIsValid = False
         self.city_url = self.getUrl()
+        print(self.city_url)
         self.data = []
         self.start()
 
@@ -82,25 +83,35 @@ class weatherCrawler(object):
                                         l = url.split('/')
                                         l[-2] = 'night'
                                         url = '/'.join(l)
-                                        dic[k['class'][0]] = 'pic/day/%s'%l[-1]
+                                        # print(pathlib.Path(__file__).parent/'pic'/'day'/('%s'%l[-1]))
+                                        dic[k['class'][0]] = str('pic/day/'+('%s'%l[-1]))
+
                                         try:
-                                            file = open('pic/day/%s'%l[-1],'rb')
+                                            file = open(dic[k['class'][0]],'rb')
                                         except:
-                                            urllib.request.urlretrieve(url, filename='pic/day/%s' % l[-1])
+                                            try:
+                                                urllib.request.urlretrieve(url, filename=dic[k['class'][0]])
+                                            except:
+                                                path = pathlib.Path(__file__).parent/'pic'/'day'/('%s'%l[-1])
+                                                urllib.request.urlretrieve(url, filename=path)
                                     else:
                                         dic[k['class'][0]] = str(k.string).replace(' ','').replace('\n','')
                             self.data.append(dic)
 
     def crawlerWeatherData(self):
         headers = [('Accept',' text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8'),
-                   # ('Accept-Encoding','gzip, deflate'),
+                   ('Accept-Encoding','gzip, deflate'),
                    ('Accept-Language','zh-CN,zh;q=0.9'),
                    ('User-Agent','Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'),
                    ('Connection','keep-alive'),
                    ('Upgrade - Insecure - Requests','1'),
                    ('Host','www.nmc.cn')]
         try:
-            html = urllib.request.urlopen(self.city_url[0]).read().decode('utf-8')
+            html = urllib.request.urlopen(self.city_url[0]).read()#.decode('utf-8')
+            try:
+                html = gzip.decompress(html).decode("utf-8")
+            except:
+                html = html.decode("utf-8")
             self.handleHtml(html)
             cjar = http.cookiejar.CookieJar()
             opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cjar))
@@ -108,10 +119,12 @@ class weatherCrawler(object):
             urllib.request.install_opener(opener)
             self.apiUrljson = json.loads(str(urllib.request.urlopen(self.city_url[1]).read(), encoding='utf-8'))
             self.realUrljson = json.loads(str(urllib.request.urlopen(self.city_url[2]).read(), encoding='utf-8'))
-            self.dataIsValid = True
+            # self.dataIsValid = True
+
         except Exception as e:
-            print(e)
-            self.dataIsValid = False
+            print('------>',e)
+        finally:
+            self.dataIsValid = True
 
     def getData(self):
         if self.dataIsValid:

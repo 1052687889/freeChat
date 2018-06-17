@@ -22,8 +22,9 @@ class ElecDictClient:
 
     # 总的功能显示
     def show(self):
-        print("++++++++++ 1)贪吃蛇 +++++++++++")
-        print("++++++++++ 2)退出 +++++++++++")
+        pass
+        # print("++++++++++ 1)贪吃蛇 +++++++++++")
+        # print("++++++++++ 2)退出 +++++++++++")
 
     # 连接服务端, 并且发送请求信息到服务端
     def connect_server(self):
@@ -40,7 +41,8 @@ class ElecDictClient:
                 self.s.send(b"E")
                 sys.exit()
             else:
-                print("输入有误, 请重新输入")
+                pass
+                # print("输入有误, 请重新输入")
 
     def __del__(self):
         self.s.close()

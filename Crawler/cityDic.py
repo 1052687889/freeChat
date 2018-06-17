@@ -2454,11 +2454,12 @@ AllProvinceCity = (
                                                                                     {'city':'伽师','code':'51707','url':'/publish/forecast/AXJ/jiashi.html'},
                                                                                     {'city':'鄯善','code':'51581','url':'/publish/forecast/AXJ/shanshan.html'})},
 
-{'code':'AXG','name':'香港特别行政区','url':'/publish/forecast/AXG.html','citys':({'city':'香港','code':'45005','url':'/publish/forecast/AXG/xianggang.html'})},
-
-{'code':'AAM','name':'澳门特别行政区','url':'/publish/forecast/AAM.html','citys':({'city':'澳门','code':'45011','url':'/publish/forecast/AAM/aomen.html'})},
-
-{'code':'ATW','name':'台湾省','url':'/publish/forecast/ATW.html','citys':({'city':'台北','code':'58968','url':'/publish/forecast/ATW/taibei.html'})})
+# {'code':'AXG','name':'香港特别行政区','url':'/publish/forecast/AXG.html','citys':({'city':'香港','code':'45005','url':'/publish/forecast/AXG/xianggang.html'},)},
+#
+# {'code':'AAM','name':'澳门特别行政区','url':'/publish/forecast/AAM.html','citys':({'city':'澳门','code':'45011','url':'/publish/forecast/AAM/aomen.html'},)},
+#
+# {'code':'ATW','name':'台湾省','url':'/publish/forecast/ATW.html','citys':({'city':'台北','code':'58968','url':'/publish/forecast/ATW/taibei.html'},)}
+)
 
 
 

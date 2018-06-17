@@ -10,7 +10,7 @@ from ui import myDlg
 import netClient,tetris,snake_main
 from const import MsgType
 from dataprocessing import *
-
+from Crawler import weatherApp
 
 '''
 起到转发消息到各个线程的作用
@@ -67,6 +67,8 @@ class application(object):
             if msg.type == MsgType.MSG_SYS:
                 if msg.msgtype == MsgType.EXIT:
                     self.join_all()
+                    if self.client:
+                        self.client.close()
                     sys.exit(msg.msg)
 
             elif msg.type == MsgType.MSG_LOGIN:
@@ -139,6 +141,9 @@ class application(object):
                 if msg.msgtype == MsgType.SNACK_DLG:
                     self.createProcess(snake_main.main)
 
+                if msg.msgtype == MsgType.WEATHER_DLG:
+                    self.createProcess(weatherApp.main)
+
                 if msg.msgtype == MsgType.CHAT_DLG:
                     s_queue = multiprocessing.Queue(3)
                     r_queue = multiprocessing.Queue(3)
@@ -151,7 +156,7 @@ class application(object):
                 if msg.msgtype == MsgType.TETRIS_DLG:
                     self.createProcess(tetris.run)
 
-            if msg.type in [MsgType.MSG_CALENDAR,MsgType.MSG_SNACK,MsgType.MSG_TETRIS,]:
+            if msg.type in [MsgType.MSG_CALENDAR,MsgType.MSG_SNACK,MsgType.MSG_TETRIS,MsgType.MSG_WEATHER]:
                 if msg.msgtype == MsgType.CLOSE_DLG:
                     application.dlg_msg_queue.put(msg)
 
@@ -173,7 +178,7 @@ class application(object):
             for i in self.processingList:
                 if not i[1].empty():
                     msg = i[1].get()
-                    if msg.type in [MsgType.MSG_CALENDAR,MsgType.MSG_SNACK,MsgType.MSG_TETRIS,MsgType.MSG_CHAT]:
+                    if msg.type in [MsgType.MSG_CALENDAR,MsgType.MSG_WEATHER,MsgType.MSG_SNACK,MsgType.MSG_TETRIS,MsgType.MSG_CHAT]:
                         if msg.msgtype == MsgType.CLOSE_DLG:
                             i[0].join()
                             self.processingList.remove(i)

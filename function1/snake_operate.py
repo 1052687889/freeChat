@@ -62,7 +62,7 @@ class SnakeOperate(object):
 
         # 碰到墙壁后, 直接发送身体的信息到碰墙的方法那
         if is_meet_wall:
-            print("碰到墙壁了")
+            # print("碰到墙壁了")
             p2.send(self.snake_entity.get_score())
             mwv.MeetWallView().main(p1)
 
@@ -132,7 +132,7 @@ class SnakeOperate(object):
         is_eat = False
         # 上的判断
         if self.direction == SnakeOperate.UP:
-            print("吃到食物了")
+            # print("吃到食物了")
             if (0 <= food_position[1] - snake_position[1] < food_size[1]) \
                     and -snake_size[0] < snake_position[0] - food_position[0] < food_size[0]:
                 is_eat = True

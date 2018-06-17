@@ -204,22 +204,15 @@ class friendListDlg(QtWidgets.QWidget,friendList.Ui_friendListDlg,basis.basis):
         self.TetrisButton.setIcon(icon5)
         self.TetrisButton.clicked.connect(self.TetrisButton_clicked)
         icon6 = QtGui.QIcon()
-        icon6.addPixmap(QtGui.QPixmap(str(pathlib.Path(__file__).parent/"pic/gobang.ico")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.gobangButton.setIcon(icon6)
-        self.gobangButton.clicked.connect(self.gobangButton_clicked)
-        icon7 = QtGui.QIcon()
-        icon7.addPixmap(QtGui.QPixmap(str(pathlib.Path(__file__).parent/"pic/file.ico")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.fileButton.setIcon(icon7)
-        self.fileButton.clicked.connect(self.fileButton_clicked)
-        icon8 = QtGui.QIcon()
-        icon8.addPixmap(QtGui.QPixmap(str(pathlib.Path(__file__).parent/"pic/seting.ico")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.setingButton.setIcon(icon8)
+        icon6.addPixmap(QtGui.QPixmap(str(pathlib.Path(__file__).parent/"pic/robot.jpg")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.robotButton.setIcon(icon6)
+
         self.m_model = QtGui.QStandardItemModel(0, 1, self)
         m_completer = QtWidgets.QCompleter(self.m_model, self)
         self.findlineEdit.textChanged.connect(self.findlineEdit_textChanged)
         self.findlineEdit.setCompleter(m_completer)
 
-        self.setingButton.clicked.connect(self.setingButton_clicked)
+        self.robotButton.clicked.connect(self.robotButton_clicked)
 
         self.friendTreeWidget.itemDoubleClicked.connect(self.friendTreeWidgetItemDoubleClicked)
         self.friendTreeWidget.clear()
@@ -312,7 +305,10 @@ class friendListDlg(QtWidgets.QWidget,friendList.Ui_friendListDlg,basis.basis):
         return QtGui.QIcon("zhpic.jpg")
 
     def weatherButton_clicked(self):
-        print('weatherButton_clicked')
+        if MsgType.WEATHER_DLG not in self.dlgstate:
+            self.dlgstate.append(MsgType.WEATHER_DLG)
+            msg = MsgType(type=MsgType.MSG_FRIENDLIST,msgtype=MsgType.WEATHER_DLG)
+            self.send_queue.put(msg)
 
     def calendarButton_clicked(self):
         if MsgType.CALENDAR_DLG not in self.dlgstate:
@@ -332,14 +328,9 @@ class friendListDlg(QtWidgets.QWidget,friendList.Ui_friendListDlg,basis.basis):
             msg = MsgType(type=MsgType.MSG_FRIENDLIST,msgtype=MsgType.TETRIS_DLG)
             self.send_queue.put(msg)
 
-    def gobangButton_clicked(self):
-        print('gobangButton_clicked')
 
-    def fileButton_clicked(self):
-        print('fileButton_clicked')
-
-    def setingButton_clicked(self):
-        print('setingButton_clicked')
+    def robotButton_clicked(self):
+        print('robotButton_clicked')
 
     def deleteuser(self):
         self.sendMsg(queue = self.send_queue,
@@ -497,7 +488,9 @@ class friendListDlg(QtWidgets.QWidget,friendList.Ui_friendListDlg,basis.basis):
             if msg.type == MsgType.MSG_SNACK:
                 if msg.msgtype == MsgType.CLOSE_DLG:
                     self.dlgstate.remove(MsgType.SNACK_DLG)
-
+            if msg.type == MsgType.MSG_WEATHER:
+                if msg.msgtype == MsgType.CLOSE_DLG:
+                    self.dlgstate.remove(MsgType.WEATHER_DLG)
             if msg.type == MsgType.MSG_CHAT:
                 if msg.msgtype == MsgType.CLOSE_DLG:
                     self.dlgstate.remove(MsgType.CHAT_DLG+'_%s'%msg.msg)

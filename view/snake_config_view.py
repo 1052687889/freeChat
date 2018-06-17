@@ -251,13 +251,13 @@ class Ui_snake_config(object):
         # return config_all
 
     def return_game_main_func(self):
-        print("返回游戏主界面")
+        # print("返回游戏主界面")
         self.p1.send("return_game_main")
         # 关闭该窗口
         self.snake_config.close()
 
     def exit_game_func(self):
-        print("退出游戏")
+        # print("退出游戏")
         msg = MsgType(type=MsgType.MSG_SNACK, msgtype=MsgType.CLOSE_DLG, msg=os.getpid())
         self.queue.put(msg)
         # self.snake_config.hide()

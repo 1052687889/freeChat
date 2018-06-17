@@ -12,6 +12,7 @@ class MsgType(object):
     MSG_SNACK = "MSG_SNACK"
     MSG_TETRIS = "MSG_TETRIS"
     MSG_CHAT = "MSG_CHAT"
+    MSG_WEATHER = "MSG_WEATHER"
 
     EXIT = "EXIT"
     CLOSE_DLG = "CLOSE_DLG"
@@ -31,6 +32,7 @@ class MsgType(object):
     CHAT_DLG = "CHAT_DLG"
     CHAT_ORGIN_DATA = "CHAT_ORGIN_DATA"
     CHAT_DATA = 'CHAT_DATA'
+    WEATHER_DLG = "WEATHER_DLG"
 
     def __init__(self,type,msgtype,msg=None):
         self.type = type
